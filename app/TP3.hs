@@ -79,11 +79,7 @@ partitionStricte (x:xs) = ([x],xs): [ (x:ls,rs) | (ls,rs) <- partitionStricte xs
 
 data Op = Add | Sub | Mul | Div deriving Eq -- deriving (Show, Eq) 
 
-instance Show Op where
-   show Add = "+"
-   show Sub = "-"
-   show Mul = "*"
-   show Div = "/"
+
 
 validOp :: Op -> Int -> Int -> Bool
 validOp Sub x y = x>y
@@ -240,6 +236,17 @@ test6 = solutions5 [1,3,7,10,25,50] 831
 --instance Show Exp' where 
 --    show :: Exp' -> String
 --    show e = undefined
+
+instance Show Exp' where 
+    show :: Exp' -> String
+    show (Val' n) = show n
+    show (App' Mul (Val' a) d _) = show a ++ show Mul ++ "(" ++ show d ++ ")"
+    show (App' Div (Val' a) d _) = show a++ show Mul ++ "(" ++ show d ++ ")"
+    show (App' Mul g (Val' a) _) = "(" ++ show g ++ ")" ++ show Mul ++ show a
+    show (App' Div g (Val' a) _) = "(" ++ show g ++ ")" ++ show Mul ++ show a
+    show (App' Div g d _) = "(" ++ show g ++ ")" ++ show Div ++ "(" ++ show d ++ ")"
+    show (App' Mul g d _) = "(" ++ show g ++ ")" ++ show Mul ++ "(" ++ show d ++ ")"
+    show (App' o g d _)  = show g ++ show o ++ show d
 
 -- VII) generalisez certaines fonctions avec de l'ordre superieur afin de reduire la duplication de code dans ce programme
 

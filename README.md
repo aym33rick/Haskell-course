@@ -585,12 +585,123 @@ Ctrl+Z
 
 ## Implementation du jeu
 
-TODO
+### Opérations
+On commence par définir 4 opérations
+  ``` haskell
+  data Op = Add | Sub | Mul | Div deriving Eq -- deriving (Show, Eq)
+  ```
+On défini ensuite les façons dont elles peuvent être affiché
+  ``` haskell
+  instance Show Op where
+   show Add = "+"
+   show Sub = "-"
+   show Mul = "*"
+   show Div = "/"
+  ```
+On vient ensuite définir des règles de validation pour ces 4 opérations  
+__Sub => pas de chiffres négatif  
+__Div => division entière et pas de division par 1  
+__Mul => ne faire x*y et y*x qu'une fois, et pas de multiplication par 1  
+__Add => ne faire x+y et y+x q'une fois
+  ``` haskell
+  validOp' :: Op -> Int -> Int -> Bool
+  validOp' Sub x y = x>y
+  validOp' Div x y = x `mod` y == 0 && y /= 1
+  validOp' Mul x y = x /= 1 && y /= 1 && x>=y
+  validOp' Add x y = x>=y
+  validOp' _   _ _ = True 
+  ```
+On défini ensuite les actions des opérations
+  ``` haskell
+  evalOp :: Op -> Int -> Int -> Int
+  evalOp Add x y = x + y
+  evalOp Sub x y = x - y
+  evalOp Mul x y = x * y
+  evalOp Div x y = x `div` y 
+  ```
+### Expressions
+On défini ensuite un type expression Exp qui sera soit une feuille (chiffre) soit une opérations (nœud)
+``` haskell
+data Exp = Val Int | App Op Exp Exp deriving Show 
+```
+On vient ensuite définir des règles de validation pour ces 2 expressions  
+__Val => le chiffre doit être supérieur à 0  
+__App => les 2 expressions doivent être valident, et on doit pouvoir effectuer cette opération sur ces 2 expressions
+``` haskell
+validExp :: Exp -> Bool
+validExp (Val n) = n>0
+validExp (App o g d) = validExp g && validExp d && validOp o (evalExp g) (evalExp d)  
+```
+On défini ensuite les actions des expressions
+``` haskell
+evalExp :: Exp -> Int
+evalExp (Val n) = n
+evalExp (App o g d) = evalOp o (evalExp g) (evalExp d)
+```
+On va ensuite fusionner la generation et le filtrage des expressions invalides tout en mémoisant l'evaluation  
+Afin de mémoiser l'évaluation il va nous falloir créer une nouvelle Exp'
+``` haskell
+evalExp' :: Exp' -> Int
+evalExp' (Val' n) = n
+evalExp' (App' _ _ _ n) = n
+```
+TODO expliquer
+``` haskell
+exps4 :: [Int] -> [Exp']
+exps4 [x] = [Val' x]
+exps4 xs =
+  [App' o g d (evalOp o (evalExp' g) (evalExp' d))
+  | (gs,ds) <- partitionStricte xs
+  , g <- exps4 gs
+  , d <- exps4 ds
+  , o <- [Add,Sub,Mul,Div]
+  ,validOp' o (evalExp' g) (evalExp' d)
+  ]
+```
+On vient ensuite filtrer toutes les solutions renvoyées par exps4 pour renvoyer le bon résultat
+``` haskell
+solutions4 :: [Int] -> Int -> [Exp']
+solutions4 nombres cible =
+  let ns = permSousListes nombres
+      es = concat (map exps4 ns)
+  in filter (\e -> evalExp' e == cible) es
+```
+On peut aussi venir chercher la solution la plus poches lorsqu'il n'y a pas de solution exact
+``` haskell
+solutions5 :: [Int] -> Int -> Exp'
+solutions5 nombres cible =
+  let ns = permSousListes nombres
+      es = concat (map exps4 ns)
+  in  minimumBy (comparing (\e -> abs (evalExp' e - cible) ) ) es
+```
 
-
-
-
-
+----------------------------
+``` haskell
+(\e -> abs (evalExp' e - cible)  
+```
+Nous renvoie une liste de différence entre la proposition et la solution prenant sa source dans es
+``` haskell
+comparing 
+```
+Rend les objets comparable par minimumBy
+``` haskell
+minimumBy 
+```
+Nous renvoie la solution la moins loin du résultat
+_______________________________
+On peut aussi chercher à afficher correctement une solution en redéfinissant des règles d'affichage
+``` haskell
+instance Show Exp' where 
+    show :: Exp' -> String
+    show (Val' n) = show n
+    show (App' Mul (Val' a) d _) = show a ++ show Mul ++ "(" ++ show d ++ ")"
+    show (App' Div (Val' a) d _) = show a++ show Mul ++ "(" ++ show d ++ ")"
+    show (App' Mul g (Val' a) _) = "(" ++ show g ++ ")" ++ show Mul ++ show a
+    show (App' Div g (Val' a) _) = "(" ++ show g ++ ")" ++ show Mul ++ show a
+    show (App' Div g d _) = "(" ++ show g ++ ")" ++ show Div ++ "(" ++ show d ++ ")"
+    show (App' Mul g d _) = "(" ++ show g ++ ")" ++ show Mul ++ "(" ++ show d ++ ")"
+    show (App' o g d _)  = show g ++ show o ++ show d
+```
 
 
 
