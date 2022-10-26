@@ -40,6 +40,7 @@ executable my-project-exe
   other-modules:
       TP2ACompleter
       TP3
+      TP4QuickCheck
       Paths_my_project
   hs-source-dirs:
       app
